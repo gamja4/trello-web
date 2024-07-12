@@ -119,6 +119,20 @@ function KanbanBoard() {
     })
   );
 
+  useEffect(() => {
+    // api 호출
+    axios({
+      url: "http://localhost:8080/boards/1",
+      method: "get",
+      headers: {
+        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0NEB0ZXN0LmNvbSIsImF1dGgiOiJVU0VSIiwiZXhwIjoxODAxNzIwNzU4OTc1LCJpYXQiOjE3MjA3NTg5NzV9.wldmcBP_uPP6bVyBnU9FpAbD4oKyu2FDVtX4_nXHtFiwS6tYqjsPq_IJFVrZzgKaRdVk24goyjsRu2-Vvf1ulw"
+      },
+    }).then(res => {
+      const datas = res.data.data;
+      setColumns(datas.sections);
+      setTasks(datas.sections.map(section => section.cards).flat());      
+    });
+  }, [])
 
   return (
     <div
