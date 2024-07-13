@@ -119,20 +119,33 @@ function KanbanBoard() {
     })
   );
 
+  
+  const callApi = (uri: string, method: 'get' | 'post' | 'put' | 'delete', body?: any, func?: any) => {
+
+    const url = `http://localhost:8080/api/boards/1${uri}`;
+    console.log(url);
+
+    axios({
+      url: url,
+      method: method,
+      headers: {
+        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0MkB0ZXN0LmNvbSIsImF1dGgiOiJVU0VSIiwiZXhwIjoxODAxNzIwODU3NDIwLCJpYXQiOjE3MjA4NTc0MjB9.OCSft86wVv6li6ig80_lLxtq0iUHRandxWmugnxWo4vGQ_ez8rqfy0LzSwL7Wh1b2r61Ks9gxY2vGUJsjQ-64Q"
+      },
+      data: body,
+    }).then(res => {
+      if (func) func(res.data);
+    });
+  }
+
   useEffect(() => {
     // api 호출
-    axios({
-      url: "http://localhost:8080/boards/1",
-      method: "get",
-      headers: {
-        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0NEB0ZXN0LmNvbSIsImF1dGgiOiJVU0VSIiwiZXhwIjoxODAxNzIwNzU4OTc1LCJpYXQiOjE3MjA3NTg5NzV9.wldmcBP_uPP6bVyBnU9FpAbD4oKyu2FDVtX4_nXHtFiwS6tYqjsPq_IJFVrZzgKaRdVk24goyjsRu2-Vvf1ulw"
-      },
-    }).then(res => {
-      const datas = res.data.data;
+    callApi('', 'get', '', (res) => {
+      const datas = res.data;
       setColumns(datas.sections);
-      setTasks(datas.sections.map(section => section.cards).flat());      
-    });
+      setTasks(datas.sections.map(section => section.cards).flat());   
+    });   
   }, [])
+
 
   return (
     <div
@@ -248,21 +261,42 @@ function KanbanBoard() {
     setTasks(newTasks);
   }
 
-  function createNewColumn() {
+  function createNewColumn() {    
+    const sectionName = prompt("title", "");
+
+    console.log(sectionName);
+
     const columnToAdd: Column = {
       id: generateId(),
-      title: `Column ${columns.length + 1}`,
+      title: sectionName?? "",
     };
 
-    setColumns([...columns, columnToAdd]);
+    // api 호출
+    callApi("/sections", "post", {
+      title: sectionName
+    }, (res: any) => {
+      const datas = res.data;
+      const columnToAdd: Column = {
+        id: datas.id,
+        title: datas.title,
+      };
+      setColumns([...columns, columnToAdd]);
+    });    
   }
 
   function deleteColumn(id: Id) {
     const filteredColumns = columns.filter((col) => col.id !== id);
     setColumns(filteredColumns);
 
-    const newTasks = tasks.filter((t) => t.sectionId !== id);
-    setTasks(newTasks);
+    // api 호출
+    callApi("/sections/" + id, "delete", '', (res: any) => {
+      if (res.status !== 500) {
+        const newTasks = tasks.filter((t) => t.sectionId !== id);
+        setTasks(newTasks);
+      } else {
+        alert(res.msg);
+      }
+    });    
   }
 
   function updateColumn(id: Id, title: string) {

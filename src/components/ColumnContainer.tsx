@@ -27,6 +27,7 @@ function ColumnContainer({
   updateTask,
 }: Props) {
   const [editMode, setEditMode] = useState(false);
+  const [createMode, setCreateMode] = useState(false);
 
   const tasksIds = useMemo(() => {
     return tasks.map((task) => task.id);
