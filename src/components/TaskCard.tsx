@@ -73,7 +73,10 @@ function TaskCard({ task, deleteTask, updateTask }: Props) {
           onBlur={toggleEditMode}
           onKeyDown={(e) => {
             if (e.key === "Enter" && e.shiftKey) {
+              console.log("editMode End");
               toggleEditMode();
+              // 이 때 api 실행.
+              updateTask(task.id, task.content, true);
             }
           }}
           onChange={(e) => updateTask(task.id, e.target.value)}

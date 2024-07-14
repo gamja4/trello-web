@@ -122,27 +122,25 @@ function KanbanBoard() {
   );
 
   
-  const callApi = (uri: string, method: 'get' | 'post' | 'put' | 'delete', body?: any, func?: any) => {
-
+  const callApi = async (uri: string, method: 'get' | 'post' | 'put' | 'delete', body?: any, func?: any) => {
     const url = `http://localhost:8080/api/boards/1${uri}`;
     console.log(url);
 
-    axios({
+    const res = await axios({
       url: url,
       method: method,
       headers: {
         "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0MkB0ZXN0LmNvbSIsImF1dGgiOiJVU0VSIiwiZXhwIjoxODAxNzIwODU3NDIwLCJpYXQiOjE3MjA4NTc0MjB9.OCSft86wVv6li6ig80_lLxtq0iUHRandxWmugnxWo4vGQ_ez8rqfy0LzSwL7Wh1b2r61Ks9gxY2vGUJsjQ-64Q"
       },
       data: body,
-    }).then(res => {
-      if (func) func(res.data);
-      return res;
-    });
+    })
+    if (func) func(res.data);
+    return res.data;
   }
 
   useEffect(() => {
     // api 호출
-    callApi('', 'get', '', (res) => {
+    callApi('', 'get').then(res=> {
       const datas = res.data;
       console.log(datas);
       setColumns(datas.sections);
@@ -154,7 +152,7 @@ function KanbanBoard() {
         });
       }).flat();
       setTasks(cards);
-    });   
+    })   
   }, [update])
 
 
@@ -249,27 +247,66 @@ function KanbanBoard() {
   );
 
   function createTask(sectionId: Id) {
-    const newTask: Task = {
-      id: generateId(),
-      sectionId,
-      content: `Task ${tasks.length + 1}`,
-    };
+    const content = prompt("content", "");
 
-    setTasks([...tasks, newTask]);
+    console.log(content);
+
+    callApi(`/sections/${sectionId}/cards`, 'post', {
+      title: `cards ${tasks.length + 1}`,
+      content: content,
+      status: sectionId
+    }).then(res => {
+      const datas = res.data;
+      const newTask: Task = {
+        id: datas.id,
+        sectionId,
+        content: datas.content,
+      };
+      setTasks([...tasks, newTask]);
+      setUpdate(!update);
+    });
   }
 
   function deleteTask(id: Id) {
-    const newTasks = tasks.filter((task) => task.id !== id);
-    setTasks(newTasks);
+    const sectionId = tasks.find(el => el.id ===id).sectionId;
+
+    callApi(`/sections/${sectionId}/cards/${id}`, "delete")
+    .then(res => {
+      if (res.status !== 500) {
+        const newTasks = tasks.filter((task) => task.id !== id);
+        setTasks(newTasks);
+        setUpdate(!update);
+      } else {
+        alert(res.msg);
+      }
+    });
   }
 
-  function updateTask(id: Id, content: string) {
+  function updateTask(id: Id, content: string, isApistart?: boolean) {
+    
     const newTasks = tasks.map((task) => {
       if (task.id !== id) return task;
       return { ...task, content };
     });
-
+    
     setTasks(newTasks);
+    
+    if (isApistart) {
+      const task = tasks.find(el => el.id ===id);
+      console.log(content);
+      console.log("update api start!");
+      callApi(`/sections/${task?.sectionId}/cards/${id}`, "put", {
+        title: task?.content,
+        content: content,
+        status: task?.sectionId
+      }).then(res => {
+        if (res.status === 200) {
+          setUpdate(!update);
+        }else {
+          alert(res.msg);
+        }
+      });
+    }    
   }
 
   function createNewColumn() {    
@@ -280,7 +317,7 @@ function KanbanBoard() {
     // api 호출
     callApi("/sections", "post", {
       title: sectionName
-    }, (res: any) => {
+    }).then(res => {
       const datas = res.data;
       const columnToAdd: Column = {
         id: datas.id,
@@ -288,15 +325,16 @@ function KanbanBoard() {
       };
       setColumns([...columns, columnToAdd]);
       setUpdate(!update);
-    });    
-  }
+    });
+  }    
 
   function deleteColumn(id: Id) {
     const filteredColumns = columns.filter((col) => col.id !== id);
     setColumns(filteredColumns);
 
     // api 호출
-    callApi("/sections/" + id, "delete", '', (res: any) => {
+    callApi("/sections/" + id, "delete")
+    .then(res => {
       if (res.status !== 500) {
         const newTasks = tasks.filter((t) => t.sectionId !== id);
         setTasks(newTasks);
