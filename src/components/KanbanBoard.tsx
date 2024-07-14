@@ -21,14 +21,17 @@ const defaultCols: Column[] = [
   {
     id: 1,
     title: "hello",
+    sort: 0
   },
   {
     id: 2,
     title: "Work in progress",
+    sort: 1
   },
   {
     id: 3,
     title: "Done",
+    sort: 2
   },
 ];
 
@@ -37,68 +40,44 @@ const defaultTasks: Task[] = [
     id: "1",
     sectionId: 1,
     content: "List admin APIs for dashboard",
+    sort: 0,
   },
   {
     id: "2",
     sectionId: 1,
-    content:
-      "Develop user registration functionality with OTP delivered on SMS after email confirmation and phone number confirmation",
+    content: "Develop user registration functionality with OTP delivered on SMS after email confirmation and phone number confirmation",
+    sort: 1,
   },
   {
     id: "3",
     sectionId: 2,
     content: "Conduct security testing",
+    sort: 1,
   },
   {
     id: "4",
     sectionId: 2,
     content: "Analyze competitors",
+    sort: 2,
   },
   {
     id: "5",
     sectionId: 2,
     content: "Create UI kit documentation",
+    sort: 3,
   },
   {
     id: "6",
     sectionId: 3,
     content: "Dev meeting",
+    sort: 1,
   },
   {
     id: "7",
     sectionId: 3,
     content: "Deliver dashboard prototype",
+    sort: 2,
   },
-  // {
-  //   id: "8",
-  //   sectionId: 1,
-  //   content: "Optimize application performance",
-  // },
-  // {
-  //   id: "9",
-  //   sectionId: 1,
-  //   content: "Implement data validation",
-  // },
-  // {
-  //   id: "10",
-  //   sectionId: 1,
-  //   content: "Design database schema",
-  // },
-  // {
-  //   id: "11",
-  //   sectionId: 1,
-  //   content: "Integrate SSL web certificates into workflow",
-  // },
-  // {
-  //   id: "12",
-  //   sectionId: 2,
-  //   content: "Implement error logging and monitoring",
-  // },
-  // {
-  //   id: "13",
-  //   sectionId: 2,
-  //   content: "Design and implement responsive UI",
-  // },
 ];
 
 function KanbanBoard() {
@@ -113,6 +92,8 @@ function KanbanBoard() {
 
   const [update, setUpdate] = useState(false);
 
+  const [columnUpdate, setColumnUpdate] = useState<Boolean>(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -120,6 +101,9 @@ function KanbanBoard() {
       },
     })
   );
+
+  
+  let dragTaskOverId = 0;
 
   
   const callApi = async (uri: string, method: 'get' | 'post' | 'put' | 'delete', body?: any, func?: any) => {
@@ -140,6 +124,28 @@ function KanbanBoard() {
 
   useEffect(() => {
     // api 호출
+    if (columnUpdate) {
+      console.log(columns);
+
+      const reqColumns = columns.map((column, i) => ({
+        id: column.id,
+        sort: i
+      }));
+
+      const req = {
+        sections: reqColumns
+      };
+
+      callApi('/sections', 'put', req)
+      .then(res => {
+        if (res.status !== 500){
+          setColumnUpdate(false);
+          setUpdate(!update);
+        }
+      })
+
+      return;
+    }
     callApi('', 'get').then(res=> {
       const datas = res.data;
       console.log(datas);
@@ -153,7 +159,7 @@ function KanbanBoard() {
       }).flat();
       setTasks(cards);
     })   
-  }, [update])
+  }, [update, columnUpdate])
 
 
   return (
@@ -369,21 +375,62 @@ function KanbanBoard() {
   }
 
   function onDragEnd(event: DragEndEvent) {
+    // 현재 section Id가 필요함
+    // dragEnd로 이미 정렬된 배열의 데이터가 tasks에 저장되어있음
+    // 그냥 백엔드에서 card update할 때 section이 변경이 되었다면 section도 변경을 해주자..
+
+    // 현재 section id는 active id또는 overId로 가져올 수 있는데 해당 id가 뭔지 이제부터 알아야지
+    console.log(tasks);
+
     setActiveColumn(null);
     setActiveTask(null);
-
+    
     const { active, over } = event;
     if (!over) return;
-
+    
+    // 해당 id는, column을 위한 id이다.
     const activeId = active.id;
     const overId = over.id;
 
+    
+    const isActiveATask = active.data.current?.type === "Task";
+    if (isActiveATask) {
+      const moveSectionId = tasks.find(el => el.id === overId).sectionId;
+      const moveTasks = tasks.filter(task => task.sectionId === moveSectionId);
+  
+      // sort 값 추가 및 id 추가해준다.
+      const orderTasks = moveTasks.map((task, i) => ({
+        id: +task.id,
+        sort: i
+      }));
+
+      // 요청 데이터 생성
+      const card = {
+        sectionId: moveSectionId,
+        cards: orderTasks
+      }
+
+      // api 호출
+      callApi(`/sections/${moveSectionId}/cards`, "put", card)
+      .then(res => {
+        if (res.status !== 500) {
+          setUpdate(!update);
+        } else {
+          alert(res.msg);
+        }
+      });
+
+    }
+
     if (activeId === overId) return;
 
+    // 컬럼 이동 관련 시작
     const isActiveAColumn = active.data.current?.type === "Column";
     if (!isActiveAColumn) return;
 
-    console.log("DRAG END");
+    console.log(columns);
+
+    console.log("Column DRAG END");
 
     setColumns((columns) => {
       const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
@@ -392,6 +439,8 @@ function KanbanBoard() {
 
       return arrayMove(columns, activeColumnIndex, overColumnIndex);
     });
+
+    setColumnUpdate(true);
   }
 
   function onDragOver(event: DragOverEvent) {
@@ -401,13 +450,19 @@ function KanbanBoard() {
     const activeId = active.id;
     const overId = over.id;
 
+    console.log(`task activeId: ${activeId}, overId: ${overId}`);
+
     if (activeId === overId) return;
+    
+    // 이 overId를 저장해야한다.
+    dragTaskOverId = overId;
 
     const isActiveATask = active.data.current?.type === "Task";
     const isOverATask = over.data.current?.type === "Task";
 
     if (!isActiveATask) return;
 
+    // 이게 task 관련 id!!
     // Im dropping a Task over another Task
     if (isActiveATask && isOverATask) {
       setTasks((tasks) => {
