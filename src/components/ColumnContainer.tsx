@@ -127,8 +127,10 @@ function ColumnContainer({
           >
             0
           </div>
-          {!editMode && column.title}
-          {editMode && (
+          {/* {!editMode && column.title} */}
+          {/* 컬럼명 수정은 하지 않음 */}
+          {column.title}
+          {/* {editMode && (
             <input
               className="bg-black focus:border-rose-500 border rounded outline-none px-2"
               value={column.title}
@@ -142,7 +144,7 @@ function ColumnContainer({
                 setEditMode(false);
               }}
             />
-          )}
+          )} */}
         </div>
         <button
           onClick={() => {

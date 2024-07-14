@@ -19,15 +19,15 @@ import axios from "../../node_modules/axios/index";
 
 const defaultCols: Column[] = [
   {
-    id: "todo",
-    title: "Todo",
+    id: 1,
+    title: "hello",
   },
   {
-    id: "doing",
+    id: 2,
     title: "Work in progress",
   },
   {
-    id: "done",
+    id: 3,
     title: "Done",
   },
 ];
@@ -35,70 +35,70 @@ const defaultCols: Column[] = [
 const defaultTasks: Task[] = [
   {
     id: "1",
-    sectionId: "todo",
+    sectionId: 1,
     content: "List admin APIs for dashboard",
   },
   {
     id: "2",
-    sectionId: "todo",
+    sectionId: 1,
     content:
       "Develop user registration functionality with OTP delivered on SMS after email confirmation and phone number confirmation",
   },
   {
     id: "3",
-    sectionId: "doing",
+    sectionId: 2,
     content: "Conduct security testing",
   },
   {
     id: "4",
-    sectionId: "doing",
+    sectionId: 2,
     content: "Analyze competitors",
   },
   {
     id: "5",
-    sectionId: "done",
+    sectionId: 2,
     content: "Create UI kit documentation",
   },
   {
     id: "6",
-    sectionId: "done",
+    sectionId: 3,
     content: "Dev meeting",
   },
   {
     id: "7",
-    sectionId: "done",
+    sectionId: 3,
     content: "Deliver dashboard prototype",
   },
-  {
-    id: "8",
-    sectionId: "todo",
-    content: "Optimize application performance",
-  },
-  {
-    id: "9",
-    sectionId: "todo",
-    content: "Implement data validation",
-  },
-  {
-    id: "10",
-    sectionId: "todo",
-    content: "Design database schema",
-  },
-  {
-    id: "11",
-    sectionId: "todo",
-    content: "Integrate SSL web certificates into workflow",
-  },
-  {
-    id: "12",
-    sectionId: "doing",
-    content: "Implement error logging and monitoring",
-  },
-  {
-    id: "13",
-    sectionId: "doing",
-    content: "Design and implement responsive UI",
-  },
+  // {
+  //   id: "8",
+  //   sectionId: 1,
+  //   content: "Optimize application performance",
+  // },
+  // {
+  //   id: "9",
+  //   sectionId: 1,
+  //   content: "Implement data validation",
+  // },
+  // {
+  //   id: "10",
+  //   sectionId: 1,
+  //   content: "Design database schema",
+  // },
+  // {
+  //   id: "11",
+  //   sectionId: 1,
+  //   content: "Integrate SSL web certificates into workflow",
+  // },
+  // {
+  //   id: "12",
+  //   sectionId: 2,
+  //   content: "Implement error logging and monitoring",
+  // },
+  // {
+  //   id: "13",
+  //   sectionId: 2,
+  //   content: "Design and implement responsive UI",
+  // },
 ];
 
 function KanbanBoard() {
@@ -110,6 +110,8 @@ function KanbanBoard() {
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  const [update, setUpdate] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -134,6 +136,7 @@ function KanbanBoard() {
       data: body,
     }).then(res => {
       if (func) func(res.data);
+      return res;
     });
   }
 
@@ -141,10 +144,18 @@ function KanbanBoard() {
     // api 호출
     callApi('', 'get', '', (res) => {
       const datas = res.data;
+      console.log(datas);
       setColumns(datas.sections);
-      setTasks(datas.sections.map(section => section.cards).flat());   
+      // cards의 id는 string이어야 함
+      const cards = datas.sections.map(section => {
+        return section.cards.map(card => {
+          card.id = String(card.id);
+          return card;
+        });
+      }).flat();
+      setTasks(cards);
     });   
-  }, [])
+  }, [update])
 
 
   return (
@@ -266,11 +277,6 @@ function KanbanBoard() {
 
     console.log(sectionName);
 
-    const columnToAdd: Column = {
-      id: generateId(),
-      title: sectionName?? "",
-    };
-
     // api 호출
     callApi("/sections", "post", {
       title: sectionName
@@ -281,6 +287,7 @@ function KanbanBoard() {
         title: datas.title,
       };
       setColumns([...columns, columnToAdd]);
+      setUpdate(!update);
     });    
   }
 
@@ -293,12 +300,14 @@ function KanbanBoard() {
       if (res.status !== 500) {
         const newTasks = tasks.filter((t) => t.sectionId !== id);
         setTasks(newTasks);
+        setUpdate(!update);
       } else {
         alert(res.msg);
       }
     });    
   }
 
+  // 사용하지 않음
   function updateColumn(id: Id, title: string) {
     const newColumns = columns.map((col) => {
       if (col.id !== id) return col;
@@ -309,6 +318,7 @@ function KanbanBoard() {
   }
 
   function onDragStart(event: DragStartEvent) {
+    console.log(event.active.data.current);
     if (event.active.data.current?.type === "Column") {
       setActiveColumn(event.active.data.current.column);
       return;
