@@ -16,6 +16,7 @@ import { SortableContext, arrayMove } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
 import TaskCard from "./TaskCard";
 import axios from "../../node_modules/axios/index";
+import { useParams } from "../../node_modules/react-router-dom/dist/index";
 
 const defaultCols: Column[] = [
   {
@@ -94,6 +95,10 @@ function KanbanBoard() {
 
   const [columnUpdate, setColumnUpdate] = useState<Boolean>(false);
 
+  const { boardId } = useParams();
+
+  console.log(boardId);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -107,7 +112,7 @@ function KanbanBoard() {
 
   
   const callApi = async (uri: string, method: 'get' | 'post' | 'put' | 'delete', body?: any, func?: any) => {
-    const url = `http://localhost:8080/api/boards/1${uri}`;
+    const url = `http://localhost:8080/api/boards/${boardId}${uri}`;
     console.log(url);
 
     const res = await axios({
