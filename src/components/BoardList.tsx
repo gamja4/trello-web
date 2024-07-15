@@ -27,14 +27,13 @@ function BoardList() {
 
     const callApi = async (method: 'get' | 'post' | 'put' | 'delete', body?: any, func?: any) => {
         const url = `http://localhost:8080/api/boards`;
-        const token = "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0MkB0ZXN0LmNvbSIsImF1dGgiOiJVU0VSIiwiZXhwIjoxODAxNzIwODU3NDIwLCJpYXQiOjE3MjA4NTc0MjB9.OCSft86wVv6li6ig80_lLxtq0iUHRandxWmugnxWo4vGQ_ez8rqfy0LzSwL7Wh1b2r61Ks9gxY2vGUJsjQ-64Q";
-
+        const token = window.sessionStorage.getItem("accessToken");
         try {
             const res = await axios({
                 url: url,
                 method: method,
                 headers: {
-                    "Authorization": token
+                    "Authorization": `Bearer ${token}`
                 },
                 data: body,
             });
