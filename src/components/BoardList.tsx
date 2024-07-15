@@ -7,7 +7,7 @@ const defaultList: Board[] = []; // Assuming defaultList is defined somewhere el
 
 function BoardList() {
     const [boards, setBoards] = useState<Board[]>(defaultList);
-    const { boardId } = useParams<{ boardId: string }>();
+    const {boardId} = useParams<{ boardId: string }>();
 
     useEffect(() => {
         fetchBoards();
@@ -54,11 +54,12 @@ function BoardList() {
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold text-white">Board List</h1>
                 <div className="flex gap-4">
-                    <button className="py-2 px-4 rounded text-white font-bold hover:bg-gray-200 hover:text-gray-800" onClick={handleClick}>
+                    <button className="py-2 px-4 rounded text-white font-bold hover:bg-gray-200 hover:text-gray-800"
+                            onClick={createNewBoard}>
                         Add Board
                     </button>
                     <Link
-                        to="/login"
+                        to="/"
                         className="py-2 px-4 rounded text-white font-bold hover:bg-gray-200 hover:text-gray-800"
                     >
                         Login
@@ -75,6 +76,21 @@ function BoardList() {
         </div>
 
     );
+
+    function createNewBoard() {
+        const boardName = prompt("title", "");
+
+        callApi("post", {
+            title: boardName
+        }).then(res => {
+            const datas = res.data;
+            const boardToAdd: Board = {
+                id: datas.id,
+                title: datas.title,
+            };
+            setBoards([...boards, boardToAdd]);
+        });
+    }
 }
 
 export default BoardList;
