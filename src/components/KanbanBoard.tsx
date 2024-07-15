@@ -115,11 +115,13 @@ function KanbanBoard() {
     const url = `http://localhost:8080/api/boards/${boardId}${uri}`;
     console.log(url);
 
+    const token = window.sessionStorage.getItem("accessToken");
+
     const res = await axios({
       url: url,
       method: method,
       headers: {
-        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0MkB0ZXN0LmNvbSIsImF1dGgiOiJVU0VSIiwiZXhwIjoxODAxNzIwODU3NDIwLCJpYXQiOjE3MjA4NTc0MjB9.OCSft86wVv6li6ig80_lLxtq0iUHRandxWmugnxWo4vGQ_ez8rqfy0LzSwL7Wh1b2r61Ks9gxY2vGUJsjQ-64Q"
+        "Authorization": `Bearer ${token}`
       },
       data: body,
     })
