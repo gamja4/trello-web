@@ -46,17 +46,18 @@ function BoardList() {
         }
     };
 
+    const handleClick = (e) => {
+        console.log("add board 클릭");
+    }
+
     return (
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold text-white">Board List</h1>
                 <div className="flex gap-4">
-                    <Link
-                        to="/add-board"
-                        className="py-2 px-4 rounded text-white font-bold hover:bg-gray-200 hover:text-gray-800"
-                    >
+                    <button className="py-2 px-4 rounded text-white font-bold hover:bg-gray-200 hover:text-gray-800" onClick={handleClick}>
                         Add Board
-                    </Link>
+                    </button>
                     <Link
                         to="/login"
                         className="py-2 px-4 rounded text-white font-bold hover:bg-gray-200 hover:text-gray-800"
